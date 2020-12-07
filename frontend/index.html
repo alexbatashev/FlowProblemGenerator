@@ -13,15 +13,16 @@
             width: 100px;
         }
 
-        .node {
+        .links line {
+            stroke: #999;
+            stroke-opacity: 0.6;
+        }
+
+        .nodes circle {
             stroke: #fff;
             stroke-width: 1.5px;
         }
 
-        .link {
-            stroke: #999;
-            stroke-opacity: .6;
-        }
     </style>
 </head>
 <body>
@@ -33,26 +34,76 @@
 <div class="column">
     <div class="toolbar">
         <label for="num-isp-nodes">ISP nodes #</label>
-        <input type="number" id="num-isp-nodes"/>
+        <input type="number" id="num-isp-nodes" value="8"/>
         <label for="num-backbone-nodes">Backbone nodes #</label>
-        <input type="number" id="num-backbone-nodes"/>
+        <input type="number" id="num-backbone-nodes" value="2"/>
+        <label for="min-clients">Min clients</label>
+        <input type="number" id="min-clients" value="2"/>
+        <label for="max-clients">Max clients</label>
+        <input type="number" id="max-clients" value="4"/>
+        <label for="min-isp-edges">Min ISP edges</label>
+        <input type="number" id="min-isp-edges" value="10"/>
+        <label for="max-isp-edges">Max ISP edges</label>
+        <input type="number" id="max-isp-edges" value="12"/>
+        <label for="min-isp-bandwidth">Min ISP bandwidth</label>
+        <input type="number" id="min-isp-bandwidth" value="20"/>
+        <label for="max-isp-bandwidth">Max ISP bandwidth</label>
+        <input type="number" id="max-isp-bandwidth" value="100"/>
+        <label for="min-client-bandwidth">Min client bandwidth</label>
+        <input type="number" id="min-client-bandwidth" value="40"/>
+        <label for="max-client-bandwidth">Max client bandwidth</label>
+        <input type="number" id="max-client-bandwidth" value="100"/>
+
         <input type="button" value="Generate" id="generate-btn">
     </div>
 </div>
-<script src="https://d3js.org/d3.v6.js"></script>
+<script src="https://d3js.org/d3.v4.js"></script>
 <script>
     document.getElementById("generate-btn").onclick = function () {
         let xhr = new XMLHttpRequest();
-        xhr.open("GET", "http://localhost:40001/");
+        let params = "?";
+        params += "num_isp_nodes=" + document.getElementById("num-isp-nodes").value;
+        params += "&num_backbone_nodes=" + document.getElementById("num-backbone-nodes").value;
+        params += "&min_clients=" + document.getElementById("min-clients").value;
+        params += "&max_clients=" + document.getElementById("max-clients").value;
+        params += "&min_isp_edges=" + document.getElementById("min-isp-edges").value;
+        params += "&max_isp_edges=" + document.getElementById("max-isp-edges").value;
+        params += "&min_isp_bandwidth=" + document.getElementById("min-isp-bandwidth").value;
+        params += "&max_isp_bandwidth=" + document.getElementById("max-isp-bandwidth").value;
+        params += "&min_client_bandwidth=" + document.getElementById("min-client-bandwidth").value;
+        params += "&max_client_bandwidth=" + document.getElementById("max-client-bandwidth").value;
+        xhr.open("GET", "http://localhost:40001/" + params);
         xhr.send();
         xhr.onload = function () {
-            const graph = JSON.parse(xhr.response);
-            const nodes = graph.nodes;
-            const links = graph.links;
-            const backbone = Array.from(graph.backbone);
-            const clients = Array.from(graph.clients);
+            function dragstarted(d) {
+                if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(d) {
+                d.fx = d3.event.x;
+                d.fy = d3.event.y;
+            }
+
+            function dragended(d) {
+                if (!d3.event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+
             const width = 800;
             const height = 600;
+            const simulation = d3.forceSimulation()
+                .force("link", d3.forceLink().id(function (d) {
+                    return d.id;
+                }))
+                .force("charge", d3.forceManyBody())
+                .force("center", d3.forceCenter(width / 2, height / 2));
+
+            const graph = JSON.parse(xhr.response);
+            const backbone = Array.from(graph.backbone);
+            const clients = Array.from(graph.clients);
             console.log(graph)
 
             const scale = d3.scaleOrdinal(d3.schemeCategory10);
@@ -65,35 +116,6 @@
                 }
                 return scale(d);
             }
-            const drag = simulation => {
-                function dragstarted(event) {
-                    if (!event.active) simulation.alphaTarget(0.3).restart();
-                    event.subject.fx = event.subject.x;
-                    event.subject.fy = event.subject.y;
-                }
-
-                function dragged(event) {
-                    event.subject.fx = event.x;
-                    event.subject.fy = event.y;
-                }
-
-                function dragended(event) {
-                    if (!event.active) simulation.alphaTarget(0);
-                    event.subject.fx = null;
-                    event.subject.fy = null;
-                }
-
-                return d3.drag()
-                    .on("start", dragstarted)
-                    .on("drag", dragged)
-                    .on("end", dragended);
-            }
-
-            const simulation = d3.forceSimulation(nodes)
-                .force("link", d3.forceLink(links).id(d => d.id))
-                .force("charge", d3.forceManyBody())
-                .force("center", d3.forceCenter(width / 2, height / 2));
-
             document.getElementById("graph").innerHTML = '';
             d3.select("#graph").append("svg:svg");
             const svg = d3.select("#graph > svg");
@@ -101,39 +123,71 @@
             svg.attr("viewBox", [0, 0, width, height]);
 
             const link = svg.append("g")
-                .attr("stroke", "#999")
-                .attr("stroke-opacity", 0.6)
+                .attr("class", "links")
                 .selectAll("line")
-                .data(links)
-                .join("line")
-                .attr("stroke-width", d => Math.sqrt(d.value));
+                .data(graph.links)
+                .enter().append("line")
+                .attr("stroke-width", function (d) {
+                    return Math.sqrt(d.value);
+                });
 
             const node = svg.append("g")
-                .attr("stroke", "#fff")
-                .attr("stroke-width", 1.5)
-                .selectAll("circle")
-                .data(nodes)
-                .join("circle")
+                .attr("class", "nodes")
+                .selectAll("g")
+                .data(graph.nodes)
+                .enter().append("g")
+
+            node.append("circle")
                 .attr("r", 5)
-                .attr("fill", color)
-                .call(drag(simulation));
+                .attr("fill", color);
+
+            // Create a drag handler and append it to the node object instead
+            const drag_handler = d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended);
+
+            drag_handler(node);
+
+            node.append("text")
+                .text(function (d) {
+                    return graph.bandwidth[d.id];
+                })
+                .attr('x', 6)
+                .attr('y', 3);
 
             node.append("title")
-                .text(d => d.id);
+                .text(function (d) {
+                    return d.id;
+                });
 
-            simulation.on("tick", () => {
+            simulation
+                .nodes(graph.nodes)
+                .on("tick", ticked);
+
+            simulation.force("link")
+                .links(graph.links);
+
+            function ticked() {
                 link
-                    .attr("x1", d => d.source.x)
-                    .attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x)
-                    .attr("y2", d => d.target.y);
+                    .attr("x1", function (d) {
+                        return d.source.x;
+                    })
+                    .attr("y1", function (d) {
+                        return d.source.y;
+                    })
+                    .attr("x2", function (d) {
+                        return d.target.x;
+                    })
+                    .attr("y2", function (d) {
+                        return d.target.y;
+                    });
 
                 node
-                    .attr("cx", d => d.x)
-                    .attr("cy", d => d.y);
-            });
-
-            // invalidation.then(() => simulation.stop());
+                    .attr("transform", function (d) {
+                        return "translate(" + d.x + "," + d.y + ")";
+                    })
+            }
         };
     }
 </script>
