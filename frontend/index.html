@@ -1,5 +1,6 @@
-<html>
+<html lang="en">
 <head>
+    <title>Flow problem generator</title>
     <style>
         .column {
             float: left;
@@ -61,6 +62,7 @@
 </div>
 <script src="https://d3js.org/d3.v4.js"></script>
 <script>
+    const base_url = "http://" + window.location.hostname + "/api/";
     document.getElementById("generate-btn").onclick = function () {
         let xhr = new XMLHttpRequest();
         let params = "?";
@@ -75,7 +77,7 @@
         params += "&max_isp_bandwidth=" + document.getElementById("max-isp-bandwidth").value;
         params += "&min_client_bandwidth=" + document.getElementById("min-client-bandwidth").value;
         params += "&max_client_bandwidth=" + document.getElementById("max-client-bandwidth").value;
-        xhr.open("GET", "http://localhost:40001/" + params);
+        xhr.open("GET", base_url + params);
         xhr.send();
         xhr.onload = function () {
             function dragstarted(d) {
