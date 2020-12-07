@@ -16,10 +16,11 @@ def plot(graph, backbone, isp, clients, bandwidth):
     plt.show()
 
 
-def generate(num_nodes, num_backbone, min_clients, max_clients, min_isp_edges, max_isp_edges, min_isp_bandwidth, max_isp_bandwidth, min_client_bandwidth, max_client_bandwidth):
+def generate(num_nodes, num_backbone, m, q, p, min_clients, max_clients, min_isp_bandwidth, max_isp_bandwidth, min_client_bandwidth, max_client_bandwidth):
     random.seed(time.time())
-    edges = random.randint(min_isp_edges, max_isp_edges)
-    graph = nx.dense_gnm_random_graph(num_nodes, edges)
+    graph = nx.extended_barabasi_albert_graph(num_nodes, m, q, p, int(time.time()))
+    while not nx.is_connected(graph):
+        graph = nx.extended_barabasi_albert_graph(num_nodes, m, q, p, int(time.time()))
     bandwidth = [str(random.randint(min_isp_bandwidth, max_isp_bandwidth)) for _ in range(num_nodes)]
     backbone = [x + num_nodes for x in range(num_backbone)]
     backbone_connectors = []

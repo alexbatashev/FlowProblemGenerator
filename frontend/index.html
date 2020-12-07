@@ -36,15 +36,17 @@
         <label for="num-isp-nodes">ISP nodes #</label>
         <input type="number" id="num-isp-nodes" value="8"/>
         <label for="num-backbone-nodes">Backbone nodes #</label>
+        <label for="m">m</label>
+        <input type="number" id="m" value="1" step="1"/>
+        <label for="p">p</label>
+        <input type="number" id="p" value="0.15" step="0.05"/>
+        <label for="q">q</label>
+        <input type="number" id="q" value="0.3" step="0.05"/>
         <input type="number" id="num-backbone-nodes" value="2"/>
         <label for="min-clients">Min clients</label>
         <input type="number" id="min-clients" value="2"/>
         <label for="max-clients">Max clients</label>
         <input type="number" id="max-clients" value="4"/>
-        <label for="min-isp-edges">Min ISP edges</label>
-        <input type="number" id="min-isp-edges" value="10"/>
-        <label for="max-isp-edges">Max ISP edges</label>
-        <input type="number" id="max-isp-edges" value="12"/>
         <label for="min-isp-bandwidth">Min ISP bandwidth</label>
         <input type="number" id="min-isp-bandwidth" value="20"/>
         <label for="max-isp-bandwidth">Max ISP bandwidth</label>
@@ -57,17 +59,18 @@
         <input type="button" value="Generate" id="generate-btn">
     </div>
 </div>
-<script src="https://d3js.org/d3.v6.js"></script>
+<script src="https://d3js.org/d3.v4.js"></script>
 <script>
     document.getElementById("generate-btn").onclick = function () {
         let xhr = new XMLHttpRequest();
         let params = "?";
         params += "num_isp_nodes=" + document.getElementById("num-isp-nodes").value;
         params += "&num_backbone_nodes=" + document.getElementById("num-backbone-nodes").value;
+        params += "&m=" + document.getElementById("m").value;
+        params += "&p=" + document.getElementById("p").value;
+        params += "&q=" + document.getElementById("q").value;
         params += "&min_clients=" + document.getElementById("min-clients").value;
         params += "&max_clients=" + document.getElementById("max-clients").value;
-        params += "&min_isp_edges=" + document.getElementById("min-isp-edges").value;
-        params += "&max_isp_edges=" + document.getElementById("max-isp-edges").value;
         params += "&min_isp_bandwidth=" + document.getElementById("min-isp-bandwidth").value;
         params += "&max_isp_bandwidth=" + document.getElementById("max-isp-bandwidth").value;
         params += "&min_client_bandwidth=" + document.getElementById("min-client-bandwidth").value;
